@@ -1,0 +1,49 @@
+{
+  "vpc-provider:account=630013828440:filter.isDefault=true:region=us-west-2:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-00da56a48cc64790a",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-0287c8592235e9d7d",
+            "cidr": "172.31.32.0/20",
+            "availabilityZone": "us-west-2a",
+            "routeTableId": "rtb-0cde5811394c66290"
+          },
+          {
+            "subnetId": "subnet-0b0f48545ad2df578",
+            "cidr": "172.31.16.0/20",
+            "availabilityZone": "us-west-2b",
+            "routeTableId": "rtb-0cde5811394c66290"
+          },
+          {
+            "subnetId": "subnet-09607e4dabc7f9b7d",
+            "cidr": "172.31.0.0/20",
+            "availabilityZone": "us-west-2c",
+            "routeTableId": "rtb-0cde5811394c66290"
+          },
+          {
+            "subnetId": "subnet-0e62b60cee0a846d0",
+            "cidr": "172.31.48.0/20",
+            "availabilityZone": "us-west-2d",
+            "routeTableId": "rtb-0cde5811394c66290"
+          }
+        ]
+      }
+    ]
+  },
+  "availability-zones:account=630013828440:region=us-west-2": [
+    "us-west-2a",
+    "us-west-2b",
+    "us-west-2c",
+    "us-west-2d"
+  ],
+  "hosted-zone:account=630013828440:domainName=mlops-club.org:region=us-west-2": {
+    "Id": "/hostedzone/Z094863733NMALFOHSOPY",
+    "Name": "mlops-club.org."
+  }
+}

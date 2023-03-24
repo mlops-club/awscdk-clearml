@@ -1,0 +1,60 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=46.1.0", "wheel", "build", "docutils" ]
+
+[project]
+name = "awscdk-clearml"
+classifiers = [
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "pydantic",
+    "aws-cdk-lib >=2.45.0, <3.0.0",
+    "constructs >=10.0.5, <11.0.0",
+    "boto3",
+    "rich",
+]
+description = "Set of components (mini-templates) that can be composed to quickly create scaffolded codebases."
+readme = "README.md"
+requires-python = ">=3.7"
+version = "0.0.0"
+authors = [ ]
+
+  [project.license]
+  text = "Proprietary"
+
+  [project.optional-dependencies]
+  test = [ "pytest", "pytest-cov", "pytest-xdist" ]
+  all = [ "pytest", "pytest-cov", "pytest-xdist" ]
+  dev = [ "pytest", "pytest-cov", "pytest-xdist" ]
+
+[tool.autoflake]
+ignore_init_module_imports = true
+remove_all_unused_imports = false
+remove_unused_variable = [ "all" ]
+
+[tool.black]
+line-length = 119
+
+[tool.flake8]
+docstring-convention = "all"
+ignore = [ "D107", "D212", "E501", "W503", "W605", "D203" ]
+radon-max-cc = 10
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint."messages control"]
+disable = [
+  "line-too-long",
+  "trailing-whitespace",
+  "missing-function-docstring",
+  "consider-using-f-string",
+  "import-error",
+  "too-few-public-methods",
+  "redefined-outer-name"
+]
