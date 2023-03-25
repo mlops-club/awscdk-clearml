@@ -19,4 +19,6 @@ jobs:
 
             - run: which aws || (which brew && brew install awscli)
             - run: which aws || (which apt-get && sudo apt-get install awscli -y)
+
+            - run: git init
             - run: SKIP=no-commit-to-branch pre-commit run --all-files
