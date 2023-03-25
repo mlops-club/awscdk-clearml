@@ -1,0 +1,31 @@
+name: Continuous Deployment
+on:
+    workflow_dispatch
+    # push:
+    #     branches:
+    #         - main
+
+jobs:
+    AWS-CDK:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: cdk diff
+              run: |
+                  CDK_DEFAULT_REGION=us-west-2 \
+                  AWS_REGION=us-west-2 \
+                  cdk diff \
+                      --region us-west-2 \
+                      --app "python app.py"
+
+            - name: cdk deploy
+              run: |
+                  CDK_DEFAULT_REGION=us-west-2 \
+                  AWS_REGION=us-west-2 \
+                  cdk deploy \
+                      --all \
+                      --diff \
+                      --require-approval never \
+                      --region us-west-2 \
+                      --app "python app.py"
