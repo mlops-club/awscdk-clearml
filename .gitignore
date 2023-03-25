@@ -17,3 +17,5 @@ build
 
 **cdk.out
 .vscode/settings.json
+
+.mypy_cache/
