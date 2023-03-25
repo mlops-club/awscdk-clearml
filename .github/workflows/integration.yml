@@ -1,0 +1,29 @@
+name: Continuous Integration
+on: pull_request
+jobs:
+    Pre-Commit-Hook:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: install dependencies
+              run: |
+                  python3 -m pip install --upgrade pip
+                  which pre-commit || python3 -m pip install pre-commit
+                  which black || python3 -m pip install black
+                  which pylint || python3 -m pip install pylint
+                  which flake8 || python3 -m pip install flake8 Flake8-pyproject Flake8-docstrings
+                  which mypy || python3 -m pip install mypy
+                  which npm || (which brew && brew install node)
+                  which npm || (which apt-get && sudo apt-get install nodejs -y)
+                  which cdk || npm install -g aws-cdk
+                  which aws || (which brew && brew install awscli)
+                  which aws || (which apt-get && sudo apt-get install awscli -y)
+
+            - name: checkout trunk and current branches
+              run: |
+                  git fetch
+                  git checkout -b main origin/main || echo "main already exists"
+                  git checkout -b ${GITHUB_HEAD_REF} origin/${GITHUB_HEAD_REF} || echo "${GITHUB_HEAD_REF} already exists"
+
+            - run: SKIP=no-commit-to-branch pre-commit run --all-files
