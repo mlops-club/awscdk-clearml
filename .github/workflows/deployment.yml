@@ -1,8 +1,10 @@
 name: Continuous Deployment
 on:
-    push:
-        branches:
-            - main
+    workflow_dispatch
+    # push:
+    #     branches:
+    #         - main
+
 jobs:
     AWS-CDK:
         runs-on: ubuntu-latest
@@ -11,24 +13,19 @@ jobs:
 
             - name: cdk diff
               run: |
-                  AWS_PROFILE={{AWS_PROFILE}} \
-                  AWS_ACCOUNT_ID=$(just get-aws-account-id) \
-                  CDK_DEFAULT_REGION={{AWS_REGION}} \
-                  AWS_REGION={{AWS_REGION}} \
+                  CDK_DEFAULT_REGION=us-west-2 \
+                  AWS_REGION=us-west-2 \
                   cdk diff \
-                      --profile {{AWS_PROFILE}} \
-                      --region {{AWS_REGION}} \
-                      --app "python3 app.py"
+                      --region us-west-2 \
+                      --app "python app.py"
 
             - name: cdk deploy
               run: |
-                  AWS_PROFILE={{AWS_PROFILE}} \
-                  CDK_DEFAULT_REGION={{AWS_REGION}} \
-                  AWS_REGION={{AWS_REGION}} \
+                  CDK_DEFAULT_REGION=us-west-2 \
+                  AWS_REGION=us-west-2 \
                   cdk deploy \
                       --all \
                       --diff \
                       --require-approval never \
-                      --profile {{AWS_PROFILE}} \
-                      --region {{AWS_REGION}} \
+                      --region us-west-2 \
                       --app "python app.py"
