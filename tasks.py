@@ -10,8 +10,11 @@ def install(context: Context):
     context.run("python3 -m pip install --upgrade pip", pty=True)
 
     # install pip packages
-    context.run("which pre-commit || \
-                python3 -m pip install pre-commit", pty=True)
+    context.run(
+        "which pre-commit || \
+                python3 -m pip install pre-commit",
+        pty=True,
+    )
     context.run("which black || python3 -m pip install black", pty=True)
     context.run("which pylint || python3 -m pip install pylint", pty=True)
     context.run(
