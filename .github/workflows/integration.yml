@@ -1,0 +1,7 @@
+name: Continuous Integration
+on: pull_request
+jobs:
+    Pre-Commit-Hook:
+        runs-on: ubuntu-latest
+        steps:
+            - run: SKIP=no-commit-to-branch pre-commit run --all-files
