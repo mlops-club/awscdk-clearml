@@ -23,6 +23,7 @@ jobs:
             - name: checkout trunk and current branches
               run: |
                   git fetch
-                  git checkout -b trunk origin/trunk || echo "trunk already exists"
+                  git checkout -b trunk origin/main || echo "main already exists"
                   git checkout -b ${GITHUB_HEAD_REF} origin/${GITHUB_HEAD_REF} || echo "${GITHUB_HEAD_REF} already exists"
+
             - run: SKIP=no-commit-to-branch pre-commit run --all-files
