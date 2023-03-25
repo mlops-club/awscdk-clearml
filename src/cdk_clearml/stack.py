@@ -39,6 +39,15 @@ class ClearMLStack(Stack):
         )
         artifact_bucket.grant_read_write(clearml_instance.ec2_instance.role)
 
+        backups_bucket = s3.Bucket(
+            self,
+            "clearml-backups-storage",
+            auto_delete_objects=True,
+            versioned=False,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+        )
+
         map_subdomain_to_ec2_ip(
             scope=self,
             ip_address=clearml_instance.ec2_instance.instance_public_ip,
