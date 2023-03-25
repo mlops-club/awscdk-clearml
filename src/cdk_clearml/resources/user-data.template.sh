@@ -12,6 +12,10 @@ exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&
 # print the commands this script runs as they are executed
 set -x
 
+# run the cfn-init to fetch files, this populates the docker-compose.yml, clearml.conf, and other files
+yum install -y aws-cfn-bootstrap
+/opt/aws/bin/cfn-init -v --stack $STACK_NAME --resource $LOGICAL_EC2_INSTANCE_RESOURCE_ID --region $AWS_REGION
+
 export WORKDIR=/clearml
 mkdir -p "$$WORKDIR"
 cd "$$WORKDIR"
@@ -39,11 +43,6 @@ function install_and_run_clearml() {
     # login to ECR and pull the minecraft server backup/restore image
     # aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
     # docker pull "$BACKUP_SERVICE_DOCKER_IMAGE_URI"
-
-# prepare a docker-compose.yml that runs the minecraft server and the backup service
-    cat << 'EOF' > "$$WORKDIR/docker-compose.clear-ml.yml"
-$CLEARML_DOCKER_COMPOSE_YAML_CONTENTS
-EOF
 
     # restore from backup if $RESTORE_FROM_MOST_RECENT_BACKUP is set to "true"
     # if [ "$RESTORE_FROM_MOST_RECENT_BACKUP" = "true" ]; then
@@ -76,4 +75,5 @@ EOF
 
 }
 
-install_and_run_clearml
+# cfn-
+install_and_run_clearml || /opt/aws/bin/cfn-signal -e 1 --stack $${AWS::StackName} --resource EC2Instance --region $${AWS::Region}

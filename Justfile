@@ -215,3 +215,6 @@ install-recommended-vscode-extensions:
          --force --install-extension ms-azuretools.vscode-docker \
          --force --install-extension ms-vsliveshare.vsliveshare \
          --force --install-extension christian-kohler.path-intellisense
+
+connect_to_host id region:
+    aws ssm start-session --target {{id}} --region={{region}}

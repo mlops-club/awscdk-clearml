@@ -16,7 +16,13 @@ DOCKER_COMPOSE_FPATH = THIS_DIR / "resources/docker-compose.yml"
 USER_DATA_TEMPLATE_FPATH = THIS_DIR / "resources/user-data.template.sh"
 
 
-def render_user_data_script(docker_compose_yaml_contents: str, aws_account_id: str, aws_region: str):
+def render_user_data_script(
+    docker_compose_yaml_contents: str,
+    aws_account_id: str,
+    aws_region: str,
+    stack_name: str,
+    logical_ec2_instance_resource_id: str,
+):
     """Render the user data script using a templated string."""
     user_data_template = USER_DATA_TEMPLATE_FPATH.read_text(encoding="utf-8")
 
@@ -28,6 +34,8 @@ def render_user_data_script(docker_compose_yaml_contents: str, aws_account_id: s
             "CLEARML_DOCKER_COMPOSE_YAML_CONTENTS": docker_compose_yaml_contents,
             "AWS_ACCOUNT_ID": aws_account_id,
             "AWS_REGION": aws_region,
+            "STACK_NAME": stack_name,
+            "LOGICAL_EC2_INSTANCE_RESOURCE_ID": logical_ec2_instance_resource_id,
             "BACKUP_SERVICE_DOCKER_IMAGE_URI": "<todo: get this from ECR>",
             "RESTORE_FROM_MOST_RECENT_BACKUP": "<todo: implement this functionality>",
         }
@@ -56,44 +64,9 @@ class ClearMLServerEC2Instance(Construct):
 
         # we should prefer the default VPC to save money
         vpc = vpc or ec2.Vpc.from_lookup(scope=self, id="DefaultVPC", is_default=True)
+        security_group = create_clearml_security_group(self, vpc=vpc)
 
-        # set up security group to allow inbound traffic on port 25565 for anyone
-        security_group = ec2.SecurityGroup(
-            scope=self,
-            id="ClearMLServerSecurityGroup",
-            vpc=vpc,
-            allow_all_outbound=True,
-        )
-
-        security_group.add_ingress_rule(
-            peer=ec2.Peer.any_ipv4(),
-            connection=ec2.Port.tcp(8080),
-            description="ClearML Web UI",
-        )
-        security_group.add_ingress_rule(
-            peer=ec2.Peer.any_ipv4(),
-            connection=ec2.Port.tcp(8008),
-            description="ClearML API Server",
-        )
-        security_group.add_ingress_rule(
-            peer=ec2.Peer.any_ipv4(),
-            connection=ec2.Port.tcp(8081),
-            description="ClearML File Server",
-        )
-
-        security_group.add_ingress_rule(
-            peer=ec2.Peer.any_ipv4(),
-            connection=ec2.Port.tcp(22),
-            description="Allow inbound traffic on port 22",
-        )
-        # allow all outbound traffic
-        security_group.add_egress_rule(
-            peer=ec2.Peer.any_ipv4(),
-            connection=ec2.Port.all_traffic(),
-            description="Allow all outbound traffic",
-        )
-
-        # create iam role for ec2 instance using AmazonSSMManagedInstanceCore
+        # enable SSH connection using AWS SSM (so users do not need SSH keys to access the instance)
         iam_role = iam.Role(
             scope=self,
             id="ClearMLServerIamRole",
@@ -102,17 +75,21 @@ class ClearMLServerEC2Instance(Construct):
         iam_role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore"))
 
         stack = Stack.of(self)
+
+        ec2_instance_id = "ClearMLServerInstance"
         user_data_script = ec2.UserData.custom(
             content=render_user_data_script(
                 docker_compose_yaml_contents=DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
                 aws_account_id=stack.account,
                 aws_region=stack.region,
+                stack_name=stack.stack_name,
+                logical_ec2_instance_resource_id=ec2_instance_id,
             )
         )
 
         self.ec2_instance = ec2.Instance(
             scope=self,
-            id="ClearMLServerInstance",
+            id=ec2_instance_id,
             vpc=vpc,
             instance_type=ec2.InstanceType("t2.medium"),
             machine_image=ec2.MachineImage.latest_amazon_linux(),
@@ -120,6 +97,13 @@ class ClearMLServerEC2Instance(Construct):
             user_data_causes_replacement=True,
             role=iam_role,
             security_group=security_group,
+            init=ec2.CloudFormationInit.from_elements(
+                # docker-compose file at /clearml/docker-compose.clearml.yml
+                ec2.InitFile.from_string(
+                    "/clearml/docker-compose.clearml.yml",
+                    DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
+                )
+            ),
             key_name="ericriddoch",
         )
 
@@ -141,6 +125,47 @@ class ClearMLServerEC2Instance(Construct):
         )
 
         add_cloudwatch_alarms_to_ec2(scope=self, ec2_instance_id=self.ec2_instance.instance_id)
+
+
+def create_clearml_security_group(scope: Construct, vpc: ec2.Vpc):
+    # set up security group to allow inbound traffic on port 25565 for anyone
+    security_group = ec2.SecurityGroup(
+        scope=scope,
+        id="ClearMLServerSecurityGroup",
+        vpc=vpc,
+        allow_all_outbound=True,
+    )
+
+    security_group.add_ingress_rule(
+        peer=ec2.Peer.any_ipv4(),
+        connection=ec2.Port.tcp(8080),
+        description="ClearML Web UI",
+    )
+    security_group.add_ingress_rule(
+        peer=ec2.Peer.any_ipv4(),
+        connection=ec2.Port.tcp(8008),
+        description="ClearML API Server",
+    )
+    security_group.add_ingress_rule(
+        peer=ec2.Peer.any_ipv4(),
+        connection=ec2.Port.tcp(8081),
+        description="ClearML File Server",
+    )
+
+    security_group.add_ingress_rule(
+        peer=ec2.Peer.any_ipv4(),
+        connection=ec2.Port.tcp(22),
+        description="Allow inbound traffic on port 22",
+    )
+
+    # allow all outbound traffic
+    security_group.add_egress_rule(
+        peer=ec2.Peer.any_ipv4(),
+        connection=ec2.Port.all_traffic(),
+        description="Allow all outbound traffic",
+    )
+
+    return security_group
 
 
 def grant_ecr_pull_access(ecr_repo_arn: str, role: iam.Role, repo_construct_id: str):
@@ -243,11 +268,11 @@ def add_cloudwatch_alarms_to_ec2(scope: Construct, ec2_instance_id: str) -> None
     )
 
 
-if __name__ == "__main__":
-    print(
-        render_user_data_script(
-            docker_compose_yaml_contents=DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
-            aws_account_id="hi",
-            aws_region="hi",
-        )
-    )
+# if __name__ == "__main__":
+#     print(
+#         render_user_data_script(
+#             docker_compose_yaml_contents=DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
+#             aws_account_id="hi",
+#             aws_region="hi",
+#         )
+#     )

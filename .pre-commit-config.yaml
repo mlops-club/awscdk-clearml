@@ -7,7 +7,7 @@
 
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v3.2.0
+      rev: v4.4.0
       hooks:
           # Fails if there are any ">>>>>" lines in files due to merge conflicts.
           - id: check-merge-conflict
@@ -57,7 +57,7 @@ repos:
 
     # A few helpers for writing reStructuredText (in docstrings and sphinx docs)
     - repo: https://github.com/pre-commit/pygrep-hooks
-      rev: v1.9.0
+      rev: v1.10.0
       hooks:
           # Detect common mistake of using single backticks when writing rst
           - id: rst-backticks
@@ -67,7 +67,7 @@ repos:
           - id: rst-inline-touching-normal
 
     - repo: https://github.com/humitos/mirrors-autoflake.git
-      rev: v1.3
+      rev: v1.1
       hooks:
           # remove ALL unused imports; to protect intentional unused imports, add "# noqa" to the end of a line
           - id: autoflake
@@ -76,11 +76,11 @@ repos:
                     --in-place,
                     --remove-all-unused-imports,
                     --remove-unused-variable,
-                    --ignore-init-module-imports,
+                    "--exclude=**/*__init__.py",
                 ]
 
     - repo: https://github.com/akaihola/darker
-      rev: 1.4.1
+      rev: 1.7.0
       hooks:
         # fail if black, pylint, flake8, isort, or pydocstyle find errors in the 'git --diff'
         # between this branch and latest commit on 'main'; this is great because it does not require
@@ -92,7 +92,7 @@ repos:
           args:
             - --isort
             # executes flake8 and pydocstyle (where pydocstyle is a flake8 plugin)
-            - -L flake8 --config=./pyproject.toml
+            # - -L flake8 --toml-config=./pyproject.toml
             - -L pylint --rcfile=./pyproject.toml
             # line length for black
             - -l 119
@@ -100,9 +100,10 @@ repos:
           additional_dependencies:
             - black==22.1.0
             - isort~=5.9
-            - flake8~=4.0
+            # - flake8~=4.0
             - pylint~=2.12
             - pydocstyle~=6.1
             # pydocstyle plugin for flake8
-            - flake8-docstrings~=1.6
+            # - flake8-docstrings~=1.6
+            # - Flake8-pyproject
           entry: darker --revision main
