@@ -21,11 +21,15 @@ def install(context: Context):
 
     # install npm packages
     context.run("which npm || (which brew && brew install node)")
-    context.run("which npm || \
-                (which apt-get && sudo apt-get install nodejs -y)")
+    context.run(
+        "which npm || \
+                (which apt-get && sudo apt-get install nodejs -y)"
+    )
     context.run("which cdk || npm install -g aws-cdk")
 
     # install AWS Command Line Interface (AWS CLI)
     context.run("which aws || (which brew && brew install awscli)")
-    context.run("which aws || \
-                (which apt-get && sudo apt-get install awscli -y)")
+    context.run(
+        "which aws || \
+                (which apt-get && sudo apt-get install awscli -y)"
+    )
