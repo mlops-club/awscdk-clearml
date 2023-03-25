@@ -12,8 +12,6 @@ jobs:
             - run: which flake8 || python3 -m pip install flake8 Flake8-pyproject Flake8-docstrings
             - run: which mypy || python3 -m pip install mypy
 
-            - run: pre-commit install
-
             - run: which npm || (which brew && brew install node)
             - run: which npm || (which apt-get && sudo apt-get install nodejs -y)
 
