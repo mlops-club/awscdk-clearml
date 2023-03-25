@@ -4,4 +4,23 @@ jobs:
     Pre-Commit-Hook:
         runs-on: ubuntu-latest
         steps:
+            - run: python3 -m pip install --upgrade pip
+
+            - run: which pre-commit || python3 -m pip install pre-commit
+            - run: which black || python3 -m pip install black
+            - run: which pylint || python3 -m pip install pylint
+            - run: which flake8 || python3 -m pip install flake8 Flake8-pyproject Flake8-docstrings
+            - run: which mypy || python3 -m pip install mypy
+
+            - run: python3 -m pip install --editable .[all]
+
+            - run: pre-commit install
+
+            - run: which npm || (which brew && brew install node)
+            - run: which npm || (which apt-get && sudo apt-get install nodejs -y)
+
+            - run: which cdk || npm install -g aws-cdk
+
+            - run: which aws || (which brew && brew install awscli)
+            - run: which aws || (which apt-get && sudo apt-get install awscli -y)
             - run: SKIP=no-commit-to-branch pre-commit run --all-files
