@@ -18,6 +18,7 @@ def install(context: Context):
         python3 -m pip install flake8 Flake8-pyproject Flake8-docstrings"
     )
     context.run("which mypy || python3 -m pip install mypy")
+    context.run("which invoke || python3 -m pip install invoke")
 
     # install npm packages
     context.run("which npm || (which brew && brew install node)")
