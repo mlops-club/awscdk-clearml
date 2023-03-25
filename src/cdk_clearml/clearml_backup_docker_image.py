@@ -50,8 +50,8 @@ class ClearMLBackupServiceImage(Construct):
 
     def grant_pull(self, role: iam.Role) -> None:
         ecr_repo = ecr.Repository.from_repository_arn(
-            scope=role, 
-            id=self.ecr_repo_construct_id, 
+            scope=role,
+            id=self.ecr_repo_construct_id,
             repository_arn=self.ecr_repo_arn,
         )
         ecr_repo.grant_pull(role)

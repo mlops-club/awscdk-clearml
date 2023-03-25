@@ -22,9 +22,9 @@ class ClearMLStack(Stack):
         )
 
         clearml_instance = ClearMLServerEC2Instance(
-            self, 
-            "ClearMLServerEC2Instance", 
-            image_uri=clearml_s3_backup_docker_image.image_uri, 
+            self,
+            "ClearMLServerEC2Instance",
+            image_uri=clearml_s3_backup_docker_image.image_uri,
             ecr_repo_arn=clearml_s3_backup_docker_image.ecr_repo_arn
         )
         clearml_s3_backup_docker_image.grant_pull(clearml_instance.ec2_instance.role)
