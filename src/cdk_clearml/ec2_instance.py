@@ -22,6 +22,7 @@ def render_user_data_script(
     aws_region: str,
     stack_name: str,
     logical_ec2_instance_resource_id: str,
+    docker_image_uri: str,
 ):
     """Render the user data script using a templated string."""
     user_data_template = USER_DATA_TEMPLATE_FPATH.read_text(encoding="utf-8")
@@ -36,7 +37,7 @@ def render_user_data_script(
             "AWS_REGION": aws_region,
             "STACK_NAME": stack_name,
             "LOGICAL_EC2_INSTANCE_RESOURCE_ID": logical_ec2_instance_resource_id,
-            "BACKUP_SERVICE_DOCKER_IMAGE_URI": "<todo: get this from ECR>",
+            "BACKUP_SERVICE_DOCKER_IMAGE_URI": docker_image_uri,
             "RESTORE_FROM_MOST_RECENT_BACKUP": "<todo: implement this functionality>",
         }
     )
@@ -57,7 +58,10 @@ class ClearMLServerEC2Instance(Construct):
         self,
         scope: Construct,
         construct_id: str,
+        image_uri: str,
+        ecr_repo_arn: str,
         vpc: Optional[ec2.Vpc] = None,
+
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -84,6 +88,7 @@ class ClearMLServerEC2Instance(Construct):
                 aws_region=stack.region,
                 stack_name=stack.stack_name,
                 logical_ec2_instance_resource_id=ec2_instance_id,
+                docker_image_uri=image_uri,
             )
         )
 
@@ -108,7 +113,7 @@ class ClearMLServerEC2Instance(Construct):
         )
 
         # grant_ecr_pull_access(
-        #     ecr_repo_arn=backup_service_ecr_repo_arn, role=_ec2.role, repo_construct_id="BackupServiceEcrRepo"
+        #     ecr_repo_arn=ecr_repo_arn, role=_ec2.role, repo_construct_id="BackupServiceEcrRepo"
         # )
         # grant_s3_read_write_access(
         #     bucket_name=ClearML_server_backups_bucket_name,

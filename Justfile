@@ -71,7 +71,7 @@ cdk-destroy: #require-venv
     cdk destroy --all --diff --profile {{AWS_PROFILE}} --region {{AWS_REGION}} --app "python3 app.py"
 
 # generate CloudFormation from the code in "{{CDK_PLATFORM_DIR}}"
-cdk-synth: require-venv login-to-aws
+cdk-synth: require-venv  #login-to-aws
     AWS_PROFILE={{AWS_PROFILE}} \
     AWS_ACCOUNT_ID=$(just get-aws-account-id) \
     CDK_DEFAULT_REGION={{AWS_REGION}} \

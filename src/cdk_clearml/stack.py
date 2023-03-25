@@ -6,6 +6,7 @@ from aws_cdk import Stack
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
+from cdk_clearml.clearml_backup_docker_image import ClearMLBackupServiceImage
 from cdk_clearml.dns import map_subdomain_to_ec2_ip
 from cdk_clearml.ec2_instance import ClearMLServerEC2Instance
 
@@ -16,7 +17,17 @@ class ClearMLStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        clearml_instance = ClearMLServerEC2Instance(self, "ClearMLServerEC2Instance")
+        clearml_s3_backup_docker_image = ClearMLBackupServiceImage(
+            self, "ClearMLS3BackupDockerImage"
+        )
+
+        clearml_instance = ClearMLServerEC2Instance(
+            self, 
+            "ClearMLServerEC2Instance", 
+            image_uri=clearml_s3_backup_docker_image.image_uri, 
+            ecr_repo_arn=clearml_s3_backup_docker_image.ecr_repo_arn
+        )
+        clearml_s3_backup_docker_image.grant_pull(clearml_instance.ec2_instance.role)
 
         artifact_bucket = s3.Bucket(
             self,
@@ -26,7 +37,6 @@ class ClearMLStack(Stack):
             # Change to retain for production.
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
-
         artifact_bucket.grant_read_write(clearml_instance.ec2_instance.role)
 
         map_subdomain_to_ec2_ip(

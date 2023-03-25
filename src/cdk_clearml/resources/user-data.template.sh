@@ -50,6 +50,41 @@ function install_and_run_clearml() {
     #     docker network rm minecraft-server
     # fi
 
+    # prepare a docker-compose.yml that runs the backup service
+    cat << 'EOF' > "$$WORKDIR/docker-compose.backup-service.yml"
+# by default, this container will inherit the same IAM role as the EC2 host
+minecraft-backup:
+    # aws s3 backup image with awscli and python3
+    image: "$BACKUP_SERVICE_DOCKER_IMAGE_URI"
+    volumes:
+        - /clearml:/clearml
+    command: backup-on-interval
+    environment:
+        BACKUPS_BUCKET: "$MINECRAFT_SERVER_BACKUPS_BUCKET_NAME"
+        SERVER_DATA_DIR: /clearml
+        BACKUPS_S3_PREFIX: clearml-server-backups
+        BACKUP_INTERVAL_SECONDS: "$BACKUP_INTERVAL_SECONDS"
+EOF
+
+# restore from backup if $RESTORE_FROM_MOST_RECENT_BACKUP is set to "true"
+if [ "$RESTORE_FROM_MOST_RECENT_BACKUP" = "true" ]; then
+    docker-compose run minecraft-backup restore || echo "Failed to restore from backup. Starting fresh..."
+    docker network rm minecraft-server
+fi
+
+##########################################
+# --- Start up the with docker swarm --- #
+##########################################
+
+# create a docker stack
+# docker network create minecraft-server
+docker stack deploy -c docker-compose.yml minecraft
+
+
+    cat << EOF > $$WORKDIR/docker-compose.backup-service.yaml
+    hi
+    EOF
+
     ############################################
     # --- Start up the with docker compose --- #
     ############################################
