@@ -17,15 +17,13 @@ class ClearMLStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        clearml_s3_backup_docker_image = ClearMLBackupServiceImage(
-            self, "ClearMLS3BackupDockerImage"
-        )
+        clearml_s3_backup_docker_image = ClearMLBackupServiceImage(self, "ClearMLS3BackupDockerImage")
 
         clearml_instance = ClearMLServerEC2Instance(
             self,
             "ClearMLServerEC2Instance",
             image_uri=clearml_s3_backup_docker_image.image_uri,
-            ecr_repo_arn=clearml_s3_backup_docker_image.ecr_repo_arn
+            ecr_repo_arn=clearml_s3_backup_docker_image.ecr_repo_arn,
         )
         clearml_s3_backup_docker_image.grant_pull(clearml_instance.ec2_instance.role)
 
