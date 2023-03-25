@@ -1,0 +1,43 @@
+name: Continuous Deployment
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+
+jobs:
+    AWS-CDK:
+        runs-on: ubuntu-latest
+        environment: production-deployment
+        steps:
+            - uses: actions/checkout@v2
+
+            - run: pip install invoke
+
+            - name: install dependencies
+              run: invoke install
+
+            - name: cdk diff
+              env:
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              run: |
+                  CDK_DEFAULT_REGION=us-west-2 \
+                  AWS_REGION=us-west-2 \
+                  cdk diff \
+                      --region us-west-2 \
+                      --app "python app.py"
+
+            # - name: cdk deploy
+            #   env:
+            #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            #   run: |
+            #       CDK_DEFAULT_REGION=us-west-2 \
+            #       AWS_REGION=us-west-2 \
+            #       cdk deploy \
+            #           --all \
+            #           --diff \
+            #           --require-approval never \
+            #           --region us-west-2 \
+            #           --app "python app.py"

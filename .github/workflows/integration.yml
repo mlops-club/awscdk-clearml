@@ -1,0 +1,20 @@
+name: Continuous Integration
+on: pull_request
+jobs:
+    Pre-Commit-Hook:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - run: pip install invoke
+
+            - name: install dependencies
+              run: invoke install
+
+            - name: checkout main and current branches
+              run: |
+                  git fetch
+                  git checkout -b main origin/main || echo "main already exists"
+                  git checkout -b ${GITHUB_HEAD_REF} origin/${GITHUB_HEAD_REF} || echo "${GITHUB_HEAD_REF} already exists"
+
+            - run: SKIP=no-commit-to-branch pre-commit run --all-files
