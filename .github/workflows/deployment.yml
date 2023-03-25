@@ -11,6 +11,11 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
+            - run: pip install invoke
+
+            - name: install dependencies
+              run: invoke install
+
             - name: cdk diff
               run: |
                   CDK_DEFAULT_REGION=us-west-2 \
