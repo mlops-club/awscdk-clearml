@@ -23,6 +23,7 @@ def install(context: Context):
         pty=True,
     )
     context.run("which mypy || python3 -m pip install mypy", pty=True)
+    context.run("pip install --editable .[all]")
 
     # install npm packages
     context.run("which npm || (which brew && brew install node)", pty=True)
