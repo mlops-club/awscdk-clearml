@@ -19,3 +19,6 @@ build
 .vscode/settings.json
 
 .mypy_cache/
+
+aws_autoscaler.yaml
+_aws_autoscaler.yaml

@@ -22,6 +22,13 @@ print(
 
 APP = App()
 
-ClearMLStack(APP, "clearml", env=CDK_ENV)
+ClearMLStack(
+    APP,
+    "clearml-2",
+    top_level_domain_name="mlops-tools.ai.muyben.tech",
+    # vpc_name="MlOpsMLFlowCDKStack/fMlOpsMLFlowCDKStack-vpc",
+    vpc_name="ben-networked-vpc",
+    env=CDK_ENV,
+)
 
 APP.synth()
