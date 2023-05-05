@@ -2,14 +2,19 @@ import json
 from argparse import ArgumentParser
 from collections import defaultdict
 from itertools import chain
+import os
 from pathlib import Path
+from typing import Tuple
 
 import yaml
+
 from clearml import Task
 from clearml.automation.auto_scaler import AutoScaler, ScalerConfig
 from clearml.automation.aws_driver import AWSDriver
 from clearml.config import running_remotely
-from clearml.utilities.wizard.user_input import get_input, input_bool, input_int, input_list, multiline_input
+from clearml.utilities.wizard.user_input import (
+    get_input, input_bool, input_int, input_list, multiline_input
+)
 
 DEFAULT_DOCKER_IMAGE = "nvidia/cuda:10.1-runtime-ubuntu18.04"
 
@@ -98,6 +103,9 @@ def main():
     configurations = conf["configurations"]
     configurations.update(json.loads(task.get_configuration_object(name="General") or "{}"))
     task.set_configuration_object(name="General", config_text=json.dumps(configurations, indent=2))
+
+    conf["hyper_params"]["cloud_credentials_key"] = os.environ["AWS_ACCESS_KEY_ID"]
+    conf["hyper_params"]["cloud_credentials_secret"] = os.environ["AWS_SECRET_ACCESS_KEY"]
 
     if args.remote or args.run:
         print("Running AWS auto-scaler as a service\nExecution log {}".format(task.get_output_log_web_page()))

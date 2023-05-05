@@ -218,3 +218,6 @@ install-recommended-vscode-extensions:
 
 connect_to_host id region:
     aws ssm start-session --target {{id}} --region={{region}}
+
+run-aws-autoscaler:
+    python aws_autoscaler.py --config-file aws_autoscaler.yaml --run
