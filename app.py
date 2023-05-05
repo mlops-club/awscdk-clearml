@@ -25,9 +25,11 @@ APP = App()
 ClearMLStack(
     APP,
     "clearml-2",
-    top_level_domain_name="mlops-tools.ai.muyben.tech",
+    top_level_domain_name="sbox.sbox.ai.muyben.tech",
+    # top_level_domain_name="mlops-tools.ai.muyben.tech",
     # vpc_name="MlOpsMLFlowCDKStack/fMlOpsMLFlowCDKStack-vpc",
-    vpc_name="ben-networked-vpc",
+    # vpc_name="ben-networked-vpc",
+    vpc_name="network-default-vpc",
     env=CDK_ENV,
 )
 

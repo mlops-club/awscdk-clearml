@@ -67,7 +67,7 @@ class ClearMLStack(Stack):
             self,
             "ClearMLServerALB",
             vpc=vpc,
-            internet_facing=True,
+            internet_facing=False,
             security_group=clearml_instance.security_group,
         )
 

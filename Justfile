@@ -5,7 +5,7 @@
 
 set dotenv-load := true
 
-AWS_PROFILE := "mlops-tooling"
+AWS_PROFILE := "ben-ai-sandbox"
 AWS_REGION := "us-west-2"
 
 

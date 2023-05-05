@@ -98,7 +98,8 @@ class ClearMLServerEC2Instance(Construct):
                 )
             ),
             key_name="ericriddoch",
-            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            # vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
         )
 
         # the logical ID is needed by the cfn-init command so it can grab the docker-compose file
