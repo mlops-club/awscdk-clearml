@@ -15,6 +15,7 @@ build
 *.whl
 *egg-info
 *venv*
+*env*
 
 **cdk.out
 .vscode/settings.json
@@ -25,3 +26,4 @@ aws_autoscaler.yaml
 _aws_autoscaler.yaml
 clearml.conf
 _clearml_patch
+cdk.context.json
