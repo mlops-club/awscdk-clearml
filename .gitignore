@@ -14,6 +14,7 @@ dist
 build
 *.whl
 *egg-info
+*venv*
 
 **cdk.out
 .vscode/settings.json
@@ -22,3 +23,5 @@ build
 
 aws_autoscaler.yaml
 _aws_autoscaler.yaml
+clearml.conf
+_clearml_patch

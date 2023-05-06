@@ -14,7 +14,7 @@ set -x
 
 # run the cfn-init to fetch files, this populates the docker-compose.yml, clearml.conf, and other files
 yum install -y aws-cfn-bootstrap
-/opt/aws/bin/cfn-init -v --stack $STACK_NAME --resource $LOGICAL_EC2_INSTANCE_RESOURCE_ID --region $AWS_REGION
+/opt/aws/bin/cfn-init -v --stack $STACK_NAME --resource $LOGICAL_EC2_INSTANCE_RESOURCE_ID --region $AWS_REGION --configsets files
 
 export WORKDIR=/clearml
 mkdir -p "$$WORKDIR"
@@ -73,7 +73,27 @@ function install_and_run_clearml() {
     chmod -R 777 "$$WORKDIR"
     docker-compose -f "$$WORKDIR/docker-compose.clear-ml.yml" up -d
 
+    # start a worker in the services queue
+    pip install clearml-agent
+    clearml-agent daemon --queue default --docker python:3.9 --cpu-only
+
 }
 
-# cfn-
-install_and_run_clearml || /opt/aws/bin/cfn-signal -e 1 --stack $${AWS::StackName} --resource EC2Instance --region $${AWS::Region}
+function ping_clearml_with_retries() {
+    curl --retry 10 --retry-delay 3 --retry-connrefused 'http://localhost:8008/debug.ping'
+}
+
+function emit_cfn_success_signal() {
+    /opt/aws/bin/cfn-signal -e 0 --stack $STACK_NAME --resource $LOGICAL_EC2_INSTANCE_RESOURCE_ID --region $AWS_REGION $CFN_WAIT_HANDLE
+}
+
+function emit_cfn_failure_signal() {
+    /opt/aws/bin/cfn-signal -e 1 --stack $STACK_NAME --resource $LOGICAL_EC2_INSTANCE_RESOURCE_ID --region $AWS_REGION $CFN_WAIT_HANDLE
+}
+
+install_and_run_clearml || emit_cfn_failure_signal
+
+# ping_clearml && emit_cfn_success_signal
+
+# # if we get here, then we failed to ping clearml
+# emit_cfn_failure_signal

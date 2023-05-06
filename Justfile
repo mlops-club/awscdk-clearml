@@ -8,6 +8,11 @@ set dotenv-load := true
 AWS_PROFILE := "ben-ai-sandbox"
 AWS_REGION := "us-west-2"
 
+install-patch-for-subnet:
+    # clone git@github.com:achaiah/clearml.git to ./_clearml_patch
+    git clone git@github.com:achaiah/clearml.git ./_clearml_patch || echo
+    cd ./_clearml_patch && git checkout patch-1 && cd ..
+    pip install --editable ./_clearml_patch
 
 # install the project's python packages and other useful
 install: require-venv

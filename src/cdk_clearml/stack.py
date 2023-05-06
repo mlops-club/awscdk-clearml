@@ -12,8 +12,10 @@ from aws_cdk import aws_elasticloadbalancingv2_targets as elbv2_targets
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_route53_targets as route53_targets
 from aws_cdk import aws_s3 as s3
+from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
+from cdk_clearml.ec2_autoscaled_instance import AutoscaledEc2InstanceProfile
 from cdk_clearml.ec2_instance import ClearMLServerEC2Instance
 
 
@@ -44,24 +46,11 @@ class ClearMLStack(Stack):
 
         artifact_bucket.grant_read_write(clearml_instance.ec2_instance.role)
 
-        # map_subdomain_to_ec2_ip(
-        #     scope=self,
-        #     ip_address=clearml_instance.ec2_instance.instance_public_ip,
-        #     top_level_domain_name=top_level_domain_name,
-        #     subdomain="app.clearml",
-        # )
-        # map_subdomain_to_ec2_ip(
-        #     scope=self,
-        #     ip_address=clearml_instance.ec2_instance.instance_public_ip,
-        #     top_level_domain_name=top_level_domain_name,
-        #     subdomain="files.clearml",
-        # )
-        # map_subdomain_to_ec2_ip(
-        #     scope=self,
-        #     ip_address=clearml_instance.ec2_instance.instance_public_ip,
-        #     top_level_domain_name=top_level_domain_name,
-        #     subdomain="api.clearml",
-        # )
+        self.autoscaled_instance_profile = AutoscaledEc2InstanceProfile(
+            self,
+            construct_id="AutoscaledInstanceProfile",
+            artifacts_bucket=artifact_bucket,
+        )
 
         alb = elbv2.ApplicationLoadBalancer(
             self,
@@ -111,22 +100,6 @@ class ClearMLStack(Stack):
                 content_type="text/plain",
                 message_body="404 Not Found",
             ),
-            # default_target_groups=[
-            #     elbv2.ApplicationTargetGroup(
-            #         scope,
-            #         f"target-group",
-            #         port=443,
-            #         targets=[elbv2_targets.InstanceTarget(clearml_instance.ec2_instance)],
-            #         protocol=elbv2.ApplicationProtocol.HTTP,
-            #         vpc=vpc,
-            #         health_check=elbv2.HealthCheck(
-            #             enabled=True,
-            #             port=str(8080),
-            #             path="/",
-            #             protocol=elbv2.Protocol.HTTP,
-            #         ),
-            #     )
-            # ],
         )
 
         map_subdomain_to_alb_to_ec2(
@@ -161,6 +134,30 @@ class ClearMLStack(Stack):
             ec2_vpc=vpc,
             ec2_instance=clearml_instance.ec2_instance,
             priority=3,
+        )
+
+        cdk.CfnOutput(
+            self,
+            id="AutoscaledInstanceProfileARN",
+            value=self.autoscaled_instance_profile.instance_profile.attr_arn,
+        )
+
+        # cdk.CfnOutput(
+        #     self,
+        #     "SubnetIds",
+        #     value=cdk.Fn.join(",", vpc.private_subnets),
+        # )
+
+        cdk.CfnOutput(
+            self,
+            id="SecurityGroup",
+            value=clearml_instance.security_group.security_group_id,
+        )
+
+        cdk.CfnOutput(
+            self,
+            id="ClearMLUrl",
+            value=f"app.clearml.{top_level_domain_name}",
         )
 
 

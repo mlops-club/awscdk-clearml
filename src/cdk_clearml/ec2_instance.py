@@ -11,6 +11,8 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
+from cdk_clearml.ec2_autoscaled_instance import AutoscaledEc2InstanceProfile
+
 THIS_DIR = Path(__file__).parent
 DOCKER_COMPOSE_FPATH = THIS_DIR / "resources/docker-compose.yml"
 USER_DATA_TEMPLATE_FPATH = THIS_DIR / "resources/user-data.template.sh"
@@ -81,6 +83,8 @@ class ClearMLServerEC2Instance(Construct):
         # create a CfnWaitHandle
         cfn_wait_handle = cdk.CfnWaitConditionHandle(scope=self, id="CfnWaitHandle")
 
+        self.subnet_selection = ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS)
+
         self.ec2_instance = ec2.Instance(
             scope=self,
             id="ClearMLServerInstance",
@@ -98,7 +102,7 @@ class ClearMLServerEC2Instance(Construct):
                 )
             ),
             key_name="ericriddoch",
-            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            vpc_subnets=self.subnet_selection,
             # vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
         )
 
