@@ -1,0 +1,48 @@
+configurations:
+  extra_clearml_conf: ""
+  extra_trains_conf: ""
+  # fetch my GitHub SSH keys used to clone my private repos
+  extra_vm_bash_script: |
+    aws ssm get-parameter --region us-west-2 --name /clearml/github_ssh_private_key --with-decryption --query Parameter.Value --output text > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+    aws ssm get-parameter --region us-west-2 --name /clearml/github_ssh_public_key --with-decryption --query Parameter.Value --output text > ~/.ssh/id_rsa.pub && chmod 600 ~/.ssh/id_rsa.pub
+    ssh-keyscan github.com >> ~/.ssh/known_hosts
+    ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+
+    source /clearml_agent_venv/bin/activate
+  queues:
+    aws_4gpu_machines:
+      - - aws4gpu # instance type
+        - 1 # max instances of type
+  resource_configurations:
+    aws4gpu:
+      # you can pick out an AMI in the EC2 console in AWS; the pre-installed libraries
+      # do not matter since the agent uses docker. The key is that it has the right GPU drivers and docker installed.
+      # ami_id: ami-001f9425283d6d295 # ubuntu
+      ami_id: ami-0b24eb6af9b3438b4 # amazon linux
+      # availability_zone: us-west-2b
+      # specifying the subnet requires a special distro of clearml: pip install git+https://github.com/achaiah/clearml.git@patch-1
+      subnet_id: subnet-0e2c97145426153a8 # sbox
+      ebs_device_name: /dev/sda1
+      ebs_volume_size: 100
+      ebs_volume_type: gp3
+      instance_type: g4dn.4xlarge
+      is_spot: false
+      key_name: ericriddoch
+      security_group_ids:
+        # - sg-015d120ec854e7944 # prod
+        - sg-099372bdd1019e181 # sbox
+hyper_params:
+  cloud_credentials_region: us-west-2
+  # cloud_credentials_key:
+  # cloud_credentials_secret:
+  cloud_provider: ""
+  default_docker_image: python:3.9
+  git_pass: ""
+  git_user: ""
+  max_idle_time_min: 20 # used to be 60 by default
+  max_spin_up_time_min: 20 # used to be 30 by default
+  # polling_interval_time_min: 5
+  polling_interval_time_min: 0.33 # float works
+  workers_prefix: dynamic_worker
+  # define the permissions of the autoscaled instances
+  iam_arn: arn:aws:iam::<account id>:instance-profile/...

@@ -12,7 +12,16 @@ an opinionated ClearML deployment on AWS.
 <img src="https://github.com/mlops-club/awscdk-minecraft/blob/trunk/docs/ui/hosted-ui.png?raw=true" style="width: 100%;"/>
 </figure> -->
 
+
 ## Usage
+
+### Prerequisites
+
+- Create these as `SecureString` parameters in the AWS Systems Manager Parameter 
+  -  `/clearml/github_ssh_private_key`, from `cat ~/.ssh/id_rsa | pbcopy`
+  -  `/clearml/github_ssh_public_key`, from `cat ~/.ssh/id_rsa.pub | pbcopy`
+- Create an SSH key for yourself
+  - `just install create-ec2-key-pair-from-personal-ssh-keys`
 
 ### (1) Be sure to have the the following installed:
 

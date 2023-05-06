@@ -5,9 +5,14 @@
 
 set dotenv-load := true
 
-AWS_PROFILE := "mlops-club"
+AWS_PROFILE := "ben-ai-sandbox"
 AWS_REGION := "us-west-2"
 
+install-patch-for-subnet:
+    # clone git@github.com:achaiah/clearml.git to ./_clearml_patch
+    git clone git@github.com:achaiah/clearml.git ./_clearml_patch || echo
+    cd ./_clearml_patch && git checkout patch-1 && cd ..
+    pip install --editable ./_clearml_patch
 
 # install the project's python packages and other useful
 install: require-venv
@@ -218,3 +223,6 @@ install-recommended-vscode-extensions:
 
 connect_to_host id region:
     aws ssm start-session --target {{id}} --region={{region}}
+
+run-aws-autoscaler:
+    python aws_autoscaler.py --config-file aws_autoscaler.yaml --run

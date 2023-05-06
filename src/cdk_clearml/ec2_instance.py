@@ -11,6 +11,8 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
+from cdk_clearml.ec2_autoscaled_instance import AutoscaledEc2InstanceProfile
+
 THIS_DIR = Path(__file__).parent
 DOCKER_COMPOSE_FPATH = THIS_DIR / "resources/docker-compose.yml"
 USER_DATA_TEMPLATE_FPATH = THIS_DIR / "resources/user-data.template.sh"
@@ -22,6 +24,7 @@ def render_user_data_script(
     aws_region: str,
     stack_name: str,
     logical_ec2_instance_resource_id: str,
+    cfn_wait_handle: str,
 ):
     """Render the user data script using a templated string."""
     user_data_template = USER_DATA_TEMPLATE_FPATH.read_text(encoding="utf-8")
@@ -38,6 +41,7 @@ def render_user_data_script(
             "LOGICAL_EC2_INSTANCE_RESOURCE_ID": logical_ec2_instance_resource_id,
             "BACKUP_SERVICE_DOCKER_IMAGE_URI": "<todo: get this from ECR>",
             "RESTORE_FROM_MOST_RECENT_BACKUP": "<todo: implement this functionality>",
+            "CFN_WAIT_HANDLE": cfn_wait_handle,
         }
     )
 
@@ -64,7 +68,7 @@ class ClearMLServerEC2Instance(Construct):
 
         # we should prefer the default VPC to save money
         vpc = vpc or ec2.Vpc.from_lookup(scope=self, id="DefaultVPC", is_default=True)
-        security_group = create_clearml_security_group(self, vpc=vpc)
+        self.security_group = create_clearml_security_group(self, vpc=vpc)
 
         # enable SSH connection using AWS SSM (so users do not need SSH keys to access the instance)
         iam_role = iam.Role(
@@ -76,51 +80,59 @@ class ClearMLServerEC2Instance(Construct):
 
         stack = Stack.of(self)
 
-        ec2_instance_id = "ClearMLServerInstance"
-        user_data_script = ec2.UserData.custom(
-            content=render_user_data_script(
-                docker_compose_yaml_contents=DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
-                aws_account_id=stack.account,
-                aws_region=stack.region,
-                stack_name=stack.stack_name,
-                logical_ec2_instance_resource_id=ec2_instance_id,
-            )
-        )
+        # create a CfnWaitHandle
+        cfn_wait_handle = cdk.CfnWaitConditionHandle(scope=self, id="CfnWaitHandle")
+
+        self.subnet_selection = ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS)
 
         self.ec2_instance = ec2.Instance(
             scope=self,
-            id=ec2_instance_id,
+            id="ClearMLServerInstance",
             vpc=vpc,
             instance_type=ec2.InstanceType("t2.medium"),
             machine_image=ec2.MachineImage.latest_amazon_linux(),
-            user_data=user_data_script,
             user_data_causes_replacement=True,
             role=iam_role,
-            security_group=security_group,
+            security_group=self.security_group,
             init=ec2.CloudFormationInit.from_elements(
                 # docker-compose file at /clearml/docker-compose.clearml.yml
                 ec2.InitFile.from_string(
-                    "/clearml/docker-compose.clearml.yml",
+                    "/clearml/docker-compose.clear-ml.yml",
                     DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
                 )
             ),
             key_name="ericriddoch",
+            vpc_subnets=self.subnet_selection,
+            # vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
         )
 
-        # grant_ecr_pull_access(
-        #     ecr_repo_arn=backup_service_ecr_repo_arn, role=_ec2.role, repo_construct_id="BackupServiceEcrRepo"
-        # )
-        # grant_s3_read_write_access(
-        #     bucket_name=ClearML_server_backups_bucket_name,
-        #     role=_ec2.role,
-        #     bucket_construct_id="ClearMLServerBackupsBucket",
+        # the logical ID is needed by the cfn-init command so it can grab the docker-compose file
+        ec2_logical_resource_id = stack.get_logical_id(element=self.ec2_instance.node.default_child)
+
+        user_data_contents: str = render_user_data_script(
+            docker_compose_yaml_contents=DOCKER_COMPOSE_FPATH.read_text(encoding="utf-8"),
+            aws_account_id=stack.account,
+            aws_region=stack.region,
+            stack_name=stack.stack_name,
+            logical_ec2_instance_resource_id=ec2_logical_resource_id,
+            cfn_wait_handle=cfn_wait_handle.logical_id,
+        )
+
+        self.ec2_instance.user_data.add_commands(user_data_contents)
+
+        # # assign elastic IP address to the instance
+        # ec2.CfnEIP(
+        #     scope=self,
+        #     id="ClearMLServerElasticIp",
+        #     domain="vpc",
+        #     instance_id=self.ec2_instance.instance_id,
         # )
 
         # add stack output for ip address of the ec2 instance
         cdk.CfnOutput(
             scope=self,
-            id="ClearMLServerIp",
-            value=self.ec2_instance.instance_public_ip,
+            id="ClearMLServerPrivateIp",
+            value=self.ec2_instance.instance_private_ip,
             description="The public IP address of the ClearML server",
         )
 
