@@ -11,7 +11,6 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
-from cdk_clearml.ec2_autoscaled_instance import AutoscaledEc2InstanceProfile
 
 THIS_DIR = Path(__file__).parent
 DOCKER_COMPOSE_FPATH = THIS_DIR / "resources/docker-compose.yml"

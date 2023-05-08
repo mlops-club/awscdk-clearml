@@ -12,7 +12,6 @@ from aws_cdk import aws_elasticloadbalancingv2_targets as elbv2_targets
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_route53_targets as route53_targets
 from aws_cdk import aws_s3 as s3
-from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
 from cdk_clearml.ec2_autoscaled_instance import AutoscaledEc2InstanceProfile
@@ -52,88 +51,11 @@ class ClearMLStack(Stack):
             artifacts_bucket=artifact_bucket,
         )
 
-        alb = elbv2.ApplicationLoadBalancer(
-            self,
-            "ClearMLServerALB",
+        create_alb_that_routes_to_the_ec2_instance(
+            scope=self,
+            clearml_instance=clearml_instance,
             vpc=vpc,
-            internet_facing=False,
-            security_group=clearml_instance.security_group,
-        )
-
-        hosted_zone = route53.HostedZone.from_lookup(
-            self,
-            "hosted-zone",
-            domain_name=top_level_domain_name,
-        )
-
-        dns_validated_cert = acm.Certificate(
-            self,
-            "cert",
-            domain_name=top_level_domain_name,
-            subject_alternative_names=[
-                f"*.{top_level_domain_name}",
-                f"*.clearml.{top_level_domain_name}",
-            ],
-            validation=acm.CertificateValidation.from_dns(hosted_zone=hosted_zone),
-        )
-
-        # redirect http to https
-        alb.add_redirect(
-            source_protocol=elbv2.ApplicationProtocol.HTTP,
-            target_protocol=elbv2.ApplicationProtocol.HTTPS,
-            target_port=443,
-            open=True,
-        )
-
-        # https://app.clearml -> ec2:8080
-        # https://files.clearml -> ec2:8081
-        # https://api.clearml -> ec2:8008
-
-        https_listener = alb.add_listener(
-            "listener",
-            protocol=elbv2.ApplicationProtocol.HTTPS,
-            certificates=[elbv2.ListenerCertificate(certificate_arn=dns_validated_cert.certificate_arn)],
-            port=443,
-            # default action is returning a 404
-            default_action=elbv2.ListenerAction.fixed_response(
-                status_code=404,
-                content_type="text/plain",
-                message_body="404 Not Found",
-            ),
-        )
-
-        map_subdomain_to_alb_to_ec2(
-            scope=self,
-            alb=alb,
             top_level_domain_name=top_level_domain_name,
-            subdomain="app.clearml",
-            port=8080,
-            https_listener=https_listener,
-            ec2_vpc=vpc,
-            ec2_instance=clearml_instance.ec2_instance,
-            priority=1,
-        )
-        map_subdomain_to_alb_to_ec2(
-            scope=self,
-            alb=alb,
-            top_level_domain_name=top_level_domain_name,
-            subdomain="files.clearml",
-            port=8081,
-            https_listener=https_listener,
-            ec2_vpc=vpc,
-            ec2_instance=clearml_instance.ec2_instance,
-            priority=2,
-        )
-        map_subdomain_to_alb_to_ec2(
-            scope=self,
-            alb=alb,
-            top_level_domain_name=top_level_domain_name,
-            subdomain="api.clearml",
-            port=8008,
-            https_listener=https_listener,
-            ec2_vpc=vpc,
-            ec2_instance=clearml_instance.ec2_instance,
-            priority=3,
         )
 
         cdk.CfnOutput(
@@ -141,12 +63,6 @@ class ClearMLStack(Stack):
             id="AutoscaledInstanceProfileARN",
             value=self.autoscaled_instance_profile.instance_profile.attr_arn,
         )
-
-        # cdk.CfnOutput(
-        #     self,
-        #     "SubnetIds",
-        #     value=cdk.Fn.join(",", vpc.private_subnets),
-        # )
 
         cdk.CfnOutput(
             self,
@@ -159,6 +75,102 @@ class ClearMLStack(Stack):
             id="ClearMLUrl",
             value=f"app.clearml.{top_level_domain_name}",
         )
+
+
+def create_alb_that_routes_to_the_ec2_instance(
+    scope: Construct,
+    vpc: ec2.IVpc,
+    clearml_instance: ClearMLServerEC2Instance,
+    top_level_domain_name: str,
+):
+    """
+    Create an ALB that routes to the EC2 instance using HTTPS.
+
+    Routes
+    -------
+    https://app.clearml -> ec2:8080
+    https://files.clearml -> ec2:8081
+    https://api.clearml -> ec2:8008
+    """
+    alb = elbv2.ApplicationLoadBalancer(
+        scope,
+        "ClearMLServerALB",
+        vpc=vpc,
+        internet_facing=False,
+        security_group=clearml_instance.security_group,
+    )
+
+    hosted_zone = route53.HostedZone.from_lookup(
+        scope,
+        "hosted-zone",
+        domain_name=top_level_domain_name,
+    )
+
+    dns_validated_cert = acm.Certificate(
+        scope,
+        "cert",
+        domain_name=top_level_domain_name,
+        subject_alternative_names=[
+            f"*.{top_level_domain_name}",
+            f"*.clearml.{top_level_domain_name}",
+        ],
+        validation=acm.CertificateValidation.from_dns(hosted_zone=hosted_zone),
+    )
+
+    # redirect http to https
+    alb.add_redirect(
+        source_protocol=elbv2.ApplicationProtocol.HTTP,
+        target_protocol=elbv2.ApplicationProtocol.HTTPS,
+        target_port=443,
+        open=True,
+    )
+
+    https_listener = alb.add_listener(
+        "listener",
+        protocol=elbv2.ApplicationProtocol.HTTPS,
+        certificates=[elbv2.ListenerCertificate(certificate_arn=dns_validated_cert.certificate_arn)],
+        port=443,
+        # default action is returning a 404
+        default_action=elbv2.ListenerAction.fixed_response(
+            status_code=404,
+            content_type="text/plain",
+            message_body="404 Not Found",
+        ),
+    )
+
+    map_subdomain_to_alb_to_ec2(
+        scope=scope,
+        alb=alb,
+        top_level_domain_name=top_level_domain_name,
+        subdomain="app.clearml",
+        port=8080,
+        https_listener=https_listener,
+        ec2_vpc=vpc,
+        ec2_instance=clearml_instance.ec2_instance,
+        priority=1,
+    )
+    map_subdomain_to_alb_to_ec2(
+        scope=scope,
+        alb=alb,
+        top_level_domain_name=top_level_domain_name,
+        subdomain="files.clearml",
+        port=8081,
+        https_listener=https_listener,
+        ec2_vpc=vpc,
+        ec2_instance=clearml_instance.ec2_instance,
+        priority=2,
+    )
+    map_subdomain_to_alb_to_ec2(
+        scope=scope,
+        alb=alb,
+        top_level_domain_name=top_level_domain_name,
+        subdomain="api.clearml",
+        port=8008,
+        https_listener=https_listener,
+        ec2_vpc=vpc,
+        ec2_instance=clearml_instance.ec2_instance,
+        priority=3,
+    )
 
 
 def map_subdomain_to_alb_to_ec2(

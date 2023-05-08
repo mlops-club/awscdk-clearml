@@ -27,3 +27,6 @@ _aws_autoscaler.yaml
 clearml.conf
 _clearml_patch
 cdk.context.json
+
+src/cdk_clearml/resources/opt
+src/cdk_clearml/resources/usr

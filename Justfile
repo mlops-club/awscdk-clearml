@@ -8,6 +8,11 @@ set dotenv-load := true
 AWS_PROFILE := "ben-ai-sandbox"
 AWS_REGION := "us-west-2"
 
+run-docker-compose:
+    #!/bin/bash
+    cd ./src/cdk_clearml/resources
+    docker-compose up
+
 install-patch-for-subnet:
     # clone git@github.com:achaiah/clearml.git to ./_clearml_patch
     git clone git@github.com:achaiah/clearml.git ./_clearml_patch || echo
@@ -225,4 +230,4 @@ connect_to_host id region:
     aws ssm start-session --target {{id}} --region={{region}}
 
 run-aws-autoscaler:
-    python aws_autoscaler.py --config-file aws_autoscaler.yaml --run
+    python aws_autoscaler.py --config-file aws_autoscaler.yaml --run --remote

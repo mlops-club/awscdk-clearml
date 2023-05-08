@@ -17,7 +17,7 @@ an opinionated ClearML deployment on AWS.
 
 ### Prerequisites
 
-- Create these as `SecureString` parameters in the AWS Systems Manager Parameter 
+- Create these as `SecureString` parameters in the AWS Systems Manager Parameter
   -  `/clearml/github_ssh_private_key`, from `cat ~/.ssh/id_rsa | pbcopy`
   -  `/clearml/github_ssh_public_key`, from `cat ~/.ssh/id_rsa.pub | pbcopy`
 - Create an SSH key for yourself

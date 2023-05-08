@@ -31,6 +31,11 @@ services:
       CLEARML__apiserver__pre_populate__zip_files: "/opt/clearml/db-pre-populate"
       CLEARML__apiserver__pre_populate__artifacts_path: "/mnt/fileserver"
       CLEARML__services__async_urls_delete__enabled: "true"
+      # docs on these seed credentials: https://clear.ml/docs/latest/docs/deploying_clearml/clearml_server_security/#example-using-docker-compose
+      CLEARML__SECURE__CREDENTIALS__APISERVER__USER_KEY: "new-key-string"
+      CLEARML__SECURE__CREDENTIALS__APISERVER__USER_SECRET: "new-secret-string"
+      CLEARML__SECURE__CREDENTIALS__TESTS__USER_KEY: "new-key-string"
+      CLEARML__SECURE__CREDENTIALS__TESTS__USER_SECRET: "new-secret-string"
     ports:
       - "8008:8008"
     networks:
@@ -170,8 +175,8 @@ services:
       CLEARML_WEB_HOST: ${CLEARML_WEB_HOST:-}
       CLEARML_API_HOST: http://apiserver:8008
       CLEARML_FILES_HOST: ${CLEARML_FILES_HOST:-}
-      CLEARML_API_ACCESS_KEY: ${CLEARML_API_ACCESS_KEY:-}
-      CLEARML_API_SECRET_KEY: ${CLEARML_API_SECRET_KEY:-}
+      CLEARML_API_ACCESS_KEY: new-key-string
+      CLEARML_API_SECRET_KEY: new-secret-string
       CLEARML_AGENT_GIT_USER: ${CLEARML_AGENT_GIT_USER}
       CLEARML_AGENT_GIT_PASS: ${CLEARML_AGENT_GIT_PASS}
       CLEARML_AGENT_UPDATE_VERSION: ${CLEARML_AGENT_UPDATE_VERSION:->=0.17.0}
@@ -183,7 +188,8 @@ services:
       AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY:-}
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
       CLEARML_WORKER_ID: "clearml-services"
-      CLEARML_AGENT_DOCKER_HOST_MOUNT: "/opt/clearml/agent:/root/.clearml"
+      # added ${PWD} we could access the volume's clearml.conf
+      CLEARML_AGENT_DOCKER_HOST_MOUNT: "${PWD}/opt/clearml/agent:/root/.clearml"
       SHUTDOWN_IF_NO_ACCESS_KEY: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
